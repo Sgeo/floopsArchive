@@ -1,0 +1,318 @@
+#VRML V2.0 utf8 
+# logic script for skit 42 
+#--------------------------------------------------------------------
+# Copyright 1997 Protozoa Inc.
+# ALL RIGHTS RESERVED
+#
+# This software may not be used, copied or made available to anyone,
+# except in accordance with the license under which it is furnished.
+#
+# PROTOZOA INC.
+# 2727 Mariposa Studio:100
+# San Francisco, CA
+# 415-522-6500 Voice
+# 415-522-6522 FAX
+#--------------------------------------------------------------------
+# ------------------------------------------------------------ 
+# timings  
+#           A            B            C            D            - 
+#           Proposal     Reminder     Wait         Punchline    End 
+# 
+#ALIVE T   9.8          24.5         27.22        29.32        34.50 
+#- 9.8 = 
+# 
+#VRML  T   0            14.7         17.42        19.52        24.7 
+# ------------------------------------------------------------ 
+# 
+# -[logic script]- 
+#  
+# event in : 
+# [startTime] when the action starts usually triggered by  
+# a touch sensor.  
+# [trigger] the branching point in the scene: when the user 
+# clicks on interactive element. 
+# 
+# event out : 
+# [fraction_changed] to drive the motion part of the anim. 
+# 
+# 
+#------------------------------------------------------------ 
+ 
+PROTO LogicScript  
+[ 
+ 
+ eventOut SFFloat fraction_changed  
+ 
+ exposedField SFTime triggerTime  0 
+ exposedField  SFTime startTime 0 
+ 
+# exposedField SFTime cycleInterval 24.7 
+ field SFTime duration 24.7 
+ 
+] 
+{ 
+Group { 
+   children [ 
+# sound a b c d 
+	  DEF Sound_A Sound { 
+		 source DEF AudClip_A AudioClip { 
+			url "s42a.wav" 
+			# wire the logic script's startTime to the first sound  
+			# and the internal Script's start time 
+			startTime IS startTime  
+		 } 
+		 intensity	1 
+		 location	0 0 0 
+		 direction	0 0 1 
+		 maxFront	10000 
+		 maxBack	10000 
+		 spatialize	FALSE 
+	  }, 
+	  DEF Sound_B Sound { 
+		 source DEF AudClip_B AudioClip { 
+			url "s42b.wav" 
+			startTime 0 
+		 } 
+		 intensity	1 
+		 location	0 0 0 
+		 direction	0 0 1 
+		 maxFront	10000 
+		 maxBack	10000 
+		 spatialize	FALSE 
+	  }, 
+	  DEF Sound_C Sound { 
+		 source DEF AudClip_C AudioClip { 
+			url "s42c.wav" 
+			startTime 0 
+		 } 
+		 intensity	1 
+		 location	0 0 0 
+		 direction	0 0 1 
+		 maxFront	10000 
+		 maxBack	10000 
+		 spatialize	FALSE 
+	  }, 
+	  DEF Sound_D Sound { 
+		 source DEF AudClip_D AudioClip { 
+			url "s42d.wav" 
+			startTime IS triggerTime 
+		 } 
+		 intensity	0 
+		 location	0 0 0 
+		 direction	0 0 1 
+		 maxFront	10000 
+		 maxBack	10000 
+		 spatialize	FALSE 
+	  }, 
+	   
+# internal clock  
+# the clock contiunously generates time events. 
+# this is wired to script's time in 
+	  DEF Clock TimeSensor { 
+		 loop TRUE  
+		 cycleInterval 24.7  
+		 startTime 0 
+	  }, 
+# logic script 
+	  DEF Logic Script { 
+		 eventIn SFTime    time  
+#		 eventIn SFTime startTime IS startTime 
+		 eventIn SFBool   A_is_active 
+		 eventIn SFBool   B_is_active 
+		 eventIn SFBool   C_is_active 
+		 eventIn SFBool   D_is_active 
+ 
+		 eventOut SFFloat fraction_changed IS fraction_changed 
+		 eventOut SFTime  B_startTime 
+		 eventOut SFTime  C_startTime 
+		 eventOut SFTime  D_startTime  
+		 eventOut SFFloat A_intensity
+		 eventOut SFFloat B_intensity 
+		 eventOut SFFloat C_intensity 
+		 eventOut SFFloat D_intensity  
+ 
+#		 field SFTime     duration IS duration 
+		 field SFTime     duration 24.7 
+
+		 field SFTime     stt	0 
+		 field SFFloat    state	0 
+ 
+		 field SFFloat cycleCnt 0  
+		 field SFFloat numCycles 3 
+ 
+		field SFFloat Adur 14.7 
+		field SFFloat Bdur 2.72 
+		field SFFloat Cdur 2.1 
+		field SFFloat Ddur 5.18 
+		field SFFloat last_value 0.0
+		# ------------------------- 
+	   url	"vrmlscript:
+// copyright 1997 Protozoa Inc. all rights reserved
+// called when the root touch sensor is touched. 
+// the first sound will go off at this time. 
+// state defs : 
+// 0 = rest/begining 
+// 1 = proposition playing 
+// 2 = B setup 
+// 3 = B playing 
+// 4 = C setup  
+// 5 = C playing  
+// 6 = D setup  
+// 7 = D playing  
+// ------------------------------------------------ 
+// apochryphal 
+function startTime(value) 
+{ 
+	if(state == 0){ 
+		stt = value ; 
+		state = 1; 
+		B_intensity = 1.0; 
+		C_intensity = 0.0; 
+		D_intensity = 0.0 ;
+	} 
+} 
+// this gets called when the first audio starts and ends.  because we 
+// can't IS the scripts' startTime to an exposedField (in the sgi 
+// version) we have to use this indirect method of grabbing starting 
+// state from the sound clip. 
+function A_is_active(sound_is_active,timeStamp) 
+{ 
+	if(sound_is_active == TRUE ){ 
+		
+		if(state ==  0){ 
+			stt = timeStamp;
+			state = 1; 
+			A_intensity = 1.0 ;
+			B_intensity = 1.0; 
+			D_intensity = 0.0 ;
+		} 
+	} 
+	// if sound is turning off switch to next state. 
+	if(sound_is_active == FALSE){ 
+		
+		if(state == 1){ 
+			state = 2; 
+			A_intensity = 0.0;
+			B_intensity = 1.0; 
+		} 
+	} 
+} 
+// this gets called when the second audio starts and ends  
+function B_is_active(sound_is_active) 
+{ 
+	if(state == 3){ 
+		if(sound_is_active == FALSE){ 
+			state = 4; 
+		} 
+	} 
+} 
+// when the last sound is activated we finish the animation 
+// when it is over we restart 
+// 4-5 
+function C_is_active(value) 
+{ 
+ 	if(value == TRUE){ 
+ 		if(state != 0 && state != 1){ 
+ 				state = 4; 
+				B_intensity = 1.0; 
+				C_intensity = 1.0; 
+			 
+ 		} 
+ 	} 
+ 	if(value == FALSE ){ 
+ 		if(state == 5  ){ 
+ 			if(cycleCnt < numCycles){ 
+ 				state = 4; 
+ 				cycleCnt = cycleCnt + 1.0; 
+ 			} 
+ 			else { 
+				state = 2; 
+ 				cycleCnt = 0; 
+ 			} 
+ 		} 
+ 	} 
+} 
+// D is the punch line, in this skit the punch line returns to the 
+//previous state. 
+// 6-7 
+function D_is_active(value) 
+{ 
+ 	if(value == TRUE){ 
+ 		if(state != 0 && state != 1){ 
+ 				state = 6; 
+				B_intensity = 0.0; 
+				C_intensity = 0.0; 
+				D_intensity = 1.0; 
+ 		} 
+ 	} 
+ 	if(value == FALSE ){ 
+ 		if(state == 7  ){ 
+			D_intensity = 0.0;
+ 			state = 0; 
+ 		} 
+ 	} 
+} 
+// -- continuous time loop. this gets called every tick. 
+// state changes occure by either touchsensors or audio clips 
+// starting and stopping 
+// 
+function time(value) 
+{ 
+	// nothing is happening 
+	if(state==0){ 
+		fraction_changed = last_value; 
+	} 
+	// the first animation is running 
+	if(state == 1){ 
+		fraction_changed = (value - stt ) / duration ; 
+	} 
+	// the second part is starting  
+	if(state == 2 ){ 
+		B_startTime = value ; 
+		stt = value ; 
+		state = 3; 
+	} 
+	// the second part is running 
+	if(state == 3){ 
+		fraction_changed = ((value - stt) + Adur) / duration ; 
+	} 
+	// the wait cycle starts 
+	if(state == 4){ 
+		C_startTime = value; 
+		stt = value ; 
+		state = 5; 
+	} 
+	// wait loop playing 
+	if(state == 5) { 
+		fraction_changed = ((value - stt) + Adur+Bdur) / duration ; 
+	}	 
+	// switching to punchline 
+	if(state == 6){ 
+		stt = value ; 
+		state = 7; 
+	} 
+	// playing punchline 
+	if(state == 7){ 
+		last_value = ((value - stt) + Adur+Bdur+Cdur) / duration ; 
+		fraction_changed = last_value ;
+	
+	} 
+}  
+" 
+	  } 
+	 ]  
+} 
+# ROUTINGS  
+ROUTE Clock.time TO Logic.time  
+ROUTE AudClip_A.isActive TO Logic.A_is_active 
+ROUTE AudClip_B.isActive TO Logic.B_is_active 
+ROUTE AudClip_C.isActive TO Logic.C_is_active 
+ROUTE AudClip_D.isActive TO Logic.D_is_active 
+ROUTE Logic.B_startTime  TO AudClip_B.startTime  
+ROUTE Logic.C_startTime  TO AudClip_C.startTime  
+ROUTE Logic.D_startTime  TO AudClip_D.startTime  
+ROUTE Logic.A_intensity  TO Sound_A.intensity 
+ROUTE Logic.B_intensity  TO Sound_B.intensity  
+ROUTE Logic.C_intensity  TO Sound_C.intensity  
+ROUTE Logic.D_intensity  TO Sound_D.intensity 
+} 
