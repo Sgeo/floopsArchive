@@ -1,3 +1,5 @@
+<meta http-equiv="refresh" content="0;url=floopsArchive/floops/archive.html" />
+
 # floopsArchive
 A copy of the original "Floops' Greatest Hits" CD published in 1997 by Silicon Graphics. Created by Protozoa this is of historical interest to the Web3D community. See the file floops/credits.html for the creators.
 
